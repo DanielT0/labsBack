@@ -3,30 +3,36 @@ const { check } = require('express-validator');
 const { validarJWT } = require('../middlewares/validar-JWT');
 const { validarCampos } = require("../middlewares/validar-campos");
 const { isDate } = require('../helpers/isDate');
-const { getElementos, crearElemento, actualizarElemento, eliminarElemento } = require('../controllers/elements');
+const { getElementos, crearElemento, actualizarElemento, eliminarElemento } = require('../controllers/elementoLab');
 
 const router = Router();
 //Validación de Token
-//Obtener eventos
+//Obtener elementos
 router.use(validarJWT);
 router.get('/', getElementos);
 
-//Crear evento
+//Crear elementos
 router.post('/', [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
-    check('descripcion', 'La descripción es obligatioria').not().isEmpty(),
+    check('nombre', 'El nombre no puede contener números').not().isNumeric(),
+    check('categoria', 'Seleccione una categoría').not().isEmpty(),
+    check('laboratorio', 'Seleccione una laboratorio').not().isEmpty(),
+    check('proyecto', 'Seleccione un proyecto').not().isEmpty(),
     validarCampos
 ],
     crearElemento);
 
-//Actualizar evento
+//Actualizar elemento
 router.put('/:id', [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
-    check('descripcion', 'La descripción es obligatoria').not().isEmpty(),
+    check('nombre', 'El nombre no puede contener números').not().isNumeric(),
+    check('categoria', 'Seleccione una categoría').not().isEmpty(),
+    check('laboratorio', 'Seleccione una laboratorio').not().isEmpty(),
+    check('proyecto', 'Seleccione un proyecto').not().isEmpty(),
     validarCampos],
     actualizarElemento);
 
-//Borrar evento
+//Borrar elemento
 router.delete('/:id', eliminarElemento);
 
 module.exports = router;

@@ -23,6 +23,9 @@ app.use('/api/auth', require('./routes/auth'));
 // TODO : CRUD : Eventos
 app.use('/api/events', require('./routes/events'));
 app.use('/api/labs', require('./routes/labs')); //laboratorios
+app.use('/api/proyectos', require('./routes/projects')); //proyectos
+app.use('/api/elementos', require('./routes/elements')); //elementos
+app.use('/api/prestamos', require('./routes/prestamos')); //préstamos
 
 // Escuchar peticiones
 

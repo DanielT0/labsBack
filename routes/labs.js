@@ -10,12 +10,10 @@ const router = Router();
 router.use(validarJWT);
 router.get('/', getLaboratorios);
 
-//Crear evento
+//Crear laboratorio
 router.post('/', [
     check('nombre', 'El nombre es obligatorio').not().isEmpty(),
     check('descripcion', 'La descripción es obligatoria').not().isEmpty(),
-    check('laboratorio', 'El laboratorio es obligatorio').not().isEmpty(),
-    check('categoria', 'La categorio es obligatoria').not().isEmpty(),
     validarCampos
 ],
     crearLaboratorio);
@@ -23,8 +21,6 @@ router.post('/', [
 //Actualizar evento
 router.put('/:id', [
     check('nombre', 'El nombre es obligatirio').not().isEmpty(),
-    check('laboratorio', 'El laboratorio es obligatorio').not().isEmpty(),
-    check('categoria', 'La categorio es obligatoria').not().isEmpty(),
     check('descripcion', 'La descripción es obligatoria').not().isEmpty(),
     validarCampos],
     actualizarLaboratorio);

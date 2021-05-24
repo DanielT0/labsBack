@@ -43,15 +43,23 @@ const actualizarLaboratorio = async (req, res = response) => {
 }
 
 const crearLaboratorio = async (req, res = response) => {
-
-    const laboratorio = new Laboratorio(req.body);
-
+    const {nombre} = req.body
     try {
-
-        const laboratorioGuardado = await laboratorio.save();
+        
+        let lab = await Laboratorio.findOne({ nombre });
+        if (lab !== null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Ya existe un laboratorio con ese nombre',
+            });
+        }
+        
+        lab = new Laboratorio(req.body);
+        console.log(lab)
+        const laboratorioGuardado = await lab.save();
         res.json({
             ok: true,
-            evento: laboratorioGuardado
+            laboratorio: laboratorioGuardado
         });
     } catch (error) {
         console.log(error)

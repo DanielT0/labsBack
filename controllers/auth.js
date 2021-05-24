@@ -2,13 +2,14 @@ const { response } = require('express');  // npm i express
 const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs'); // npm i bcrypt
 const { generarJWT } = require('../helpers/jwt');
+const AdminCentral = require('../models/AdminCentral');
 
 const crearUsuario = async (req, res = response) => {
 
     const { email, password } = req.body;
     try {
         let usuario = await Usuario.findOne({ email });
-        console.log(usuario);
+        console.log(req.body.tipo);
         if (usuario !== null) {
             return res.status(400).json({
                 ok: false,
@@ -22,7 +23,24 @@ const crearUsuario = async (req, res = response) => {
         const salt = bcrypt.genSaltSync();
         usuario.password = bcrypt.hashSync(password, salt);
 
-        await usuario.save();
+        if (req.body.tipo === "adminCentral") {
+            admin = new AdminCentral(req.body);
+            try {
+                use=await usuario.save();
+                admin.idAdmin = use._id;
+                const adminCentralGuardado = await admin.save();
+                res.json({
+                    ok: true,
+                    usuario: adminCentralGuardado
+                });
+            } catch (error) {
+                console.log(error)
+                res.status(500).json({
+                    ok: false,
+                    msg: 'Hable con el administrador'
+                });
+            }
+        }
 
         //Generar JWT
         const token = await generarJWT(usuario.id, usuario.name);
@@ -85,11 +103,11 @@ const loginUsuario = async (req, res = response) => {
 }
 
 const revalidarToken = async (req, res = response) => {
-    const {uid, name} = req
+    const { uid, name } = req
     const token = await generarJWT(req.id, req.name);
     res.json({
         ok: true,
-        uid, 
+        uid,
         name,
         token,
     });

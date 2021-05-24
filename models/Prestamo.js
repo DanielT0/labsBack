@@ -1,9 +1,9 @@
 const { Schema, model } = require('mongoose');
 
-const ElementoPrestadoSchema = Schema({
+const PrestamoSchema = Schema({
     idElemento:{
         type: Schema.Types.ObjectId,
-        ref: 'Elemento',
+        ref: 'ElementoLab',
         required: true,
     },
     idUsuario:{
@@ -11,16 +11,22 @@ const ElementoPrestadoSchema = Schema({
         ref: 'Usuario',
         required: true,
     },
-    fechaPrestamo:{
+    cantidad:{
+        type: Number,
+        required: true,
+    },
+    fechaPrestamo :{
         type: Date,
         required: true,
     },
-    fechaDevolucion:{
+    fechaDevolucion :{
         type: Date,
         required: true,
     },
     observaciones:{
-        type: String,
-        required: false,
-    }
+        type: String, 
+        required: true, 
+    },
 });
+
+module.exports= model('Prestamo', PrestamoSchema);
