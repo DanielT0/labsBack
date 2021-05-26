@@ -26,6 +26,7 @@ app.use('/api/labs', require('./routes/labs')); //laboratorios
 app.use('/api/proyectos', require('./routes/projects')); //proyectos
 app.use('/api/elementos', require('./routes/elements')); //elementos
 app.use('/api/prestamos', require('./routes/prestamos')); //préstamos
+app.use('/api/usuarios', require('./routes/users')); //préstamos
 
 // Escuchar peticiones
 

@@ -6,7 +6,7 @@ const AdminCentral = require('../models/AdminCentral');
 
 const crearUsuario = async (req, res = response) => {
 
-    const { email, password } = req.body;
+    const { email, idU, password } = req.body;
     try {
         let usuario = await Usuario.findOne({ email });
         console.log(req.body.tipo);
@@ -14,6 +14,15 @@ const crearUsuario = async (req, res = response) => {
             return res.status(400).json({
                 ok: false,
                 msg: 'Ya existe un usuario con ese correo',
+            });
+        }
+
+        usuario = await Usuario.findOne({ idU });
+        console.log(req.body.tipo);
+        if (usuario !== null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Ya existe un usuario con ese id',
             });
         }
 
@@ -40,6 +49,9 @@ const crearUsuario = async (req, res = response) => {
                     msg: 'Hable con el administrador'
                 });
             }
+        }
+        else{
+            use=await usuario.save();
         }
 
         //Generar JWT

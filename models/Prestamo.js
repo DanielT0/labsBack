@@ -25,7 +25,6 @@ const PrestamoSchema = Schema({
     },
     observaciones:{
         type: String, 
-        required: true, 
     },
 });
 
