@@ -3,87 +3,194 @@
 //     msg: "Obtener eventos"
 // }
 const { response } = require('express');
-const Elemento = require('../models/Elemento');
-const ElementoLab = require('../models/ElementoLab');
-const Evento = require("../models/Eventos");
-var mongoose = require('mongoose');
+const ElementoIndividual = require('../models/ElementoIndividual');
+const sequelize = require('../database/config');
+const Categoria = require('../models/Categoria');
+const Proyecto = require('../models/Proyecto');
+const Grupo = require('../models/Grupo');
+
+const crearElementoIndividual = async (req, res = response) => {
+    let { id, nombre, categoriumId, proyectoId, grupoId} = req.body;
+    try {
+        let elemento = await ElementoIndividual.findByPk(id);
+        if (elemento != null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Ya existe un elemento con ese id',
+            })
+        }
+
+        elemento = await ElementoIndividual.findOne({
+            where: {
+                nombre: nombre
+            }
+        })
+        if (elemento != null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Ya existe un elemento con ese nombre',
+            })
+        }
+
+        let categoria = await Categoria.findByPk(categoriumId);
+        if (categoria ==  null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe una categoría con ese id',
+            })
+        }
+
+        let proyecto = await Proyecto.findByPk(proyectoId);
+        if (proyecto == null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe un proyecto con ese id',
+            })
+        }
+
+        let grupo = await Grupo.findByPk(grupoId);
+        if (grupo == null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe un grupo con ese id',
+            })
+        }
+
+        elemento = new ElementoIndividual(req.body);
+        const elementoGuardado = await elemento.save();
+        res.json({
+            ok: true,
+            elemento: elementoGuardado
+        });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            msg: 'Ha ocurrido un error en el servidor'
+        });
+    }
+}
 
 const getElementos = async (req, res = response) => {
-
-    const elementos = await ElementoLab.find();
+    console.log(req.uid);
+    const elementos = await ElementoIndividual.findAll();
     res.status(201).json({
         ok: true,
         elementos
     });
 }
 
-const actualizarElemento = async (req, res = response) => {
-    const elementoId = req.params.id;
+const getElementosNombre = async (req, res = response) => {
+    const name = req.params.nombre;
     try {
-        try {
-            const elemento = await ElementoLab.findById(elementoId);
-            // if (evento.user.toString() !== req.uid) {
-            //     return res.status(401).json({
-            //         ok: false,
-            //         msg: 'No tiene privilegio de editar este elemento'
-            //     })
-            // }
-        }
-        catch (error) {
+        const elementos = await ElementoIndividual.findAll(
+            {
+                where: {
+                    nombre:
+                        // {
+                        //     [Op.like]: '%' + request.body.query + '%'
+                        // }
+                        sequelize.where(sequelize.fn('LOWER', sequelize.col('nombre')), 'LIKE', '%' + name + '%')
+                }
+            }
+        );
+        res.status(201).json({
+            ok: true,
+            elementos
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            ok: false,
+            msg: 'Ha ocurrido un error en el servidor'
+        });
+        console.log(error);
+    }
+}
+
+const getElemento = async (req, res = response) => {
+    const { id } = req.body;
+    try {
+        const elemento = await ElementoIndividual.findByPk(id);
+        if (!elemento) {
             return res.status(404).json({
                 ok: false,
                 msg: 'No existe elemento con ese id'
             })
         }
-        const nuevoelemento = {
+        res.status(201).json({
+            ok: true,
+            elemento
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            ok: false,
+            msg: 'Ha ocurrido un error en el servidor'
+        });
+    }
+
+}
+
+
+const actualizarElemento = async (req, res = response) => {
+    const elementoId = req.params.id;
+    let { nid,categoriumId, proyectoId, grupoId}  = req.body;
+    try {
+        const elemento = await ElementoIndividual.findByPk(elementoId);
+        if (elemento == null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe un elemento con ese id',
+            })
+        }
+        const nuevoElemento = {
             ...req.body,
-            user: req.uid,
+            id: nid,
         }
 
-        const elementoActualizado = await ElementoLab.findByIdAndUpdate(elementoId, nuevoelemento, { new: true }); //Por defecto Mongo devuelve al objeto no actuañizado para poder hacer comparaciones, sin embargo al hacer new: true retorna al objeto actualizado
+        let categoria = await Categoria.findByPk(categoriumId);
+        if (categoria ==  null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe una categoría con ese id',
+            })
+        }
+
+        let proyecto = await Proyecto.findByPk(proyectoId);
+        if (proyecto == null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe un proyecto con ese id',
+            })
+        }
+
+        let grupo = await Grupo.findByPk(grupoId);
+        if (grupo == null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No existe un grupo con ese id',
+            })
+        }
+
+        await ElementoIndividual.update(nuevoElemento, { where: { id: elementoId } });
+        let elementoActualizado;
+        if (nid) {
+            elementoActualizado = await ElementoIndividual.findByPk(nid);
+        }
+        else {
+            elementoActualizado = await ElementoIndividual.findByPk(elementoId);
+        }
         res.json({
             ok: true,
-            elemento: elementoActualizado,
+            categoria: elementoActualizado,
         })
     }
     catch (error) {
         console.log(error)
         res.status(500).json({
             ok: false,
-            msg: 'Hable con el administrador'
-        });
-    }
-}
-
-const crearElemento = async (req, res = response) => {
-
-    const { idElemento } = req.body
-
-    try {
-        
-        let element = await ElementoLab.findOne({idElemento})
-        console.log(element);
-        if (element !== null) {
-            return res.status(400).json({
-                ok: false,
-                msg: 'Ya existe un elemento con ese id',
-            });
-        }
-
-        element = new ElementoLab(req.body);
-        // idElemento = mongoose.Types.ObjectId(idElemento);
-        // element._id=idElemento
-
-        const elementoGuardado = await element.save();
-        res.json({
-            ok: true,
-            element: elementoGuardado
-        });
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            msg: 'Hable con el administrador'
+            msg: 'Ha ocurrido un error en el servidor'
         });
     }
 }
@@ -92,23 +199,15 @@ const eliminarElemento = async (req, res = response) => {
 
     const elementoId = req.params.id;
     try {
-        try {
-            const elemento = await ElementoLab.findById(elementoId);
-            // if (evento.user.toString() !== req.uid) {
-            //     return res.status(401).json({
-            //         ok: false,
-            //         msg: 'No tiene privilegio de editar este elemento'
-            //     })
-            // }
-        }
-        catch (error) {
+        const elemento = await ElementoIndividual.findByPk(elementoId);
+        if (!elemento) {
             return res.status(404).json({
                 ok: false,
                 msg: 'No existe elemento con ese id'
             })
         }
 
-        await ElementoLab.findByIdAndDelete(elementoId);
+        await ElementoIndividual.destroy({ where: { id: elementoId } });
         res.json({
             ok: true,
             msg: "Elemento borrado"
@@ -118,14 +217,16 @@ const eliminarElemento = async (req, res = response) => {
         console.log(error)
         res.status(500).json({
             ok: false,
-            msg: 'Hable con el administrador'
+            msg: 'Ha ocurrido un error en el servidor'
         });
     }
 }
 
 module.exports = {
-    eliminarElemento,
-    crearElemento,
-    actualizarElemento,
+    crearElementoIndividual,
     getElementos,
+    getElementosNombre,
+    getElemento,
+    actualizarElemento,
+    eliminarElemento
 }

@@ -17,8 +17,9 @@ router.post(
         check('email', 'El email es obligatorio').isEmail(),
         check('password', 'La contraseña es obligatoria').not().isEmpty(),
         check('password', 'La contraseña debe tener mínimo 6 caracteres').isLength({ min: 6 }),
-        check("password", "La contraseña debe tener al menos un número, una mayúscula y una minúscula").isStrongPassword(),
-        validarCampos
+        check("password", "La contraseña debe tener al menos un número, una mayúscula, una minúscula y un carácter especial").isStrongPassword(),
+        validarCampos,
+        // validarJWT
     ],
     crearUsuario);
 

@@ -1,18 +1,8 @@
-const { Schema, model } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const AdminCentralSchema = Schema({
-    idAdmin:{
-        type: Schema.Types.ObjectId,
-        ref: 'Usuario',
-        required: true,
-    },
-});
+const sequelize = require('../database/config');
 
-AdminCentralSchema.method('toJSON', function(){
-    const {__v, _id, ...object} = this.toObject();
-    object.id = _id;
-    return object;
+const AdminC = sequelize.define('adminCentral', {
 })
 
-
-module.exports= model('AdminCentral', AdminCentralSchema);
+module.exports= AdminC;

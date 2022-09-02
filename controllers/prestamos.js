@@ -3,61 +3,175 @@
 //     msg: "Obtener eventos"
 // }
 const { response } = require('express');
-const ElementoLab = require('../models/ElementoLab');
-const Evento = require("../models/Eventos");
 const Prestamo = require('../models/Prestamo');
-const Usuario = require('../models/Usuario');
+const sequelize = require('../database/config');
+const Categoria = require('../models/Categoria');
+const Proyecto = require('../models/Proyecto');
+const Grupo = require('../models/Grupo');
+const Elemento = require('../models/ElementoIndividual');
+const ElementosPrestamo = require('../models/GrupoPrestamo');
+const Usuario = require('../models/User');
+const { transporter } = require('../helpers/transporter');
+
+const crearPrestamo = async (req, res = response) => {
+    let { id, elementos, usuarioId } = req.body;
+    try {
+        let prestamo = await Prestamo.findByPk(id);
+        if (prestamo != null) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Ya existe un préstamo con ese id',
+            })
+        }
+
+        for (let idElemento of elementos) {
+            let element = await Elemento.findByPk(idElemento);
+            if (!element) {
+                return res.status(404).json({
+                    ok: false,
+                    msg: `No existe elemento con el id ${idElemento}`
+                })
+            }
+        }
+
+        let usuario = await Usuario.findByPk(usuarioId);
+        if (!usuario) {
+            return res.status(404).json({
+                ok: false,
+                msg: `No existe usuario con ese id`
+            })
+        }
+
+        prestamo = new Prestamo(req.body);
+        let elementosGuardados = [];
+        const prestamoGuardado = await prestamo.save();
+        for (let idElemento of elementos) {
+            let element = await Elemento.findByPk(idElemento);
+            await prestamo.addElemento(element);
+            elementosGuardados.push(element);
+        }
+
+        transporter.sendMail({
+            to: usuario.correo,
+            from: 'danieltoor@unisabana.edu.co',
+            subject: 'Préstamo registrado exitosamente',
+            text: 'Usted ha realizado un préstamo en la plataforma de laboratorios',
+            html: '<strong>Préstamo realizado con éxito</strong>',
+        }).catch(err => console.log(err));
+        res.json({
+            ok: true,
+            prestamo: prestamoGuardado,
+            elementos: elementosGuardados,
+        });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            msg: 'Ha ocurrido un error en el servidor'
+        });
+    }
+}
 
 const getPrestamos = async (req, res = response) => {
-
-    const prestamos = await Prestamo.find();
+    console.log(req.uid);
+    const prestamos = await Prestamo.findAll({
+        include: [{
+            model: Elemento,
+            required: true,
+        }]
+    });
     res.status(201).json({
         ok: true,
         prestamos
     });
 }
 
-const actualizarPrestamo = async (req, res = response) => {
-    const prestamoId = req.params.id;
-    const {idUsuario , idElemento } = req.body
+const getPrestamo = async (req, res = response) => {
+    const { id } = req.body;
     try {
-        try {
-            const prestamo = await Evento.findById(prestamoId);
-            // if (evento.user.toString() !== req.uid) {
-            //     return res.status(401).json({
-            //         ok: false,
-            //         msg: 'No tiene privilegio de editar este elemento'
-            //     })
-            // }
-        }
-        catch (error) {
+        const prestamo = await Prestamo.findByPk(id, {
+            include: [{
+                model: Elemento,
+                required: true,
+            }]
+        });
+        if (!prestamo) {
             return res.status(404).json({
                 ok: false,
-                msg: 'No existe prestamo con ese id'
+                msg: 'No existe préstamo con ese id'
             })
         }
-        let usuario = await Usuario.findById(idUsuario)
-        console.log(req.body.tipo);
-        if (usuario == null) {
+        res.status(201).json({
+            ok: true,
+            prestamo
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            ok: false,
+            msg: 'Ha ocurrido un error en el servidor'
+        });
+    }
+
+}
+
+
+const actualizarPrestamo = async (req, res = response) => {
+    const prestamoId = req.params.id;
+    let { nid, elementos, usuarioId } = req.body;
+    try {
+        const prestamo = await Prestamo.findByPk(prestamoId);
+        if (prestamo == null) {
             return res.status(400).json({
                 ok: false,
-                msg: 'No existe un usuario con ese id',
-            });
+                msg: 'No existe un préstamo con ese id',
+            })
         }
 
-        let elemento = await ElementoLab.findById(idElemento)
-        if (elemento == null) {
-            return res.status(400).json({
-                ok: false,
-                msg: 'No existe un elemento con ese id',
-            });
+        for (let idElemento of elementos) {
+            let element = await Elemento.findByPk(idElemento);
+            if (!element) {
+                return res.status(404).json({
+                    ok: false,
+                    msg: `No existe elemento con el id ${idElemento}`
+                })
+            }
         }
+
+        let usuario = await Usuario.findByPk(usuarioId);
+        if (!usuario) {
+            return res.status(404).json({
+                ok: false,
+                msg: `No existe usuario con ese id`
+            })
+        }
+
         const nuevoPrestamo = {
             ...req.body,
-            user: req.uid,
+            id: nid,
         }
 
-        const prestamoActualizado = await Prestamo.findByIdAndUpdate(prestamoId, nuevoPrestamo, { new: true }); //Por defecto Mongo devuelve al objeto no actuañizado para poder hacer comparaciones, sin embargo al hacer new: true retorna al objeto actualizado
+        await ElementosPrestamo.destroy({
+            where: { prestamoId: prestamoId }
+        });
+
+        await Prestamo.update(nuevoPrestamo, { where: { id: prestamoId } });
+        let prestamoActualizado;
+        if (nid) {
+            prestamoId = nid;
+        }
+
+        prestamoActualizado = await Prestamo.findByPk(prestamoId);
+        for (let idElemento of elementos) {
+            let element = await Elemento.findByPk(idElemento);
+            await prestamoActualizado.addElemento(element);
+        }
+        prestamoActualizado = await Prestamo.findByPk(prestamoId, {
+            include: [{
+                model: Elemento,
+                required: true,
+            }]
+        })
         res.json({
             ok: true,
             prestamo: prestamoActualizado,
@@ -67,45 +181,7 @@ const actualizarPrestamo = async (req, res = response) => {
         console.log(error)
         res.status(500).json({
             ok: false,
-            msg: 'Hable con el administrador'
-        });
-    }
-}
-
-const crearPrestamo = async (req, res = response) => {
-
-    const {idUsuario , idElemento } = req.body
-
-    try {
-
-        let usuario = await Usuario.findById(idUsuario)
-        console.log(req.body.tipo);
-        if (usuario == null) {
-            return res.status(400).json({
-                ok: false,
-                msg: 'No existe un usuario con ese id',
-            });
-        }
-
-        let elemento = await ElementoLab.findById(idElemento)
-        if (elemento == null) {
-            return res.status(400).json({
-                ok: false,
-                msg: 'No existe un elemento con ese id',
-            });
-        }
-        const prestamo = new Prestamo(req.body);
-
-        const prestamoGuardado= await prestamo.save();
-        res.json({
-            ok: true,
-            prestamo: prestamoGuardado
-        });
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            ok: false,
-            msg: 'Hable con el administrador'
+            msg: 'Ha ocurrido un error en el servidor'
         });
     }
 }
@@ -114,46 +190,33 @@ const eliminarPrestamo = async (req, res = response) => {
 
     const prestamoId = req.params.id;
     try {
-        try {
-            const prestamo = await Prestamo.findById(prestamoId);
-            if (prestamo == null) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: 'No existe un préstamo con ese id',
-                });
-            }
-            // if (evento.user.toString() !== req.uid) {
-            //     return res.status(401).json({
-            //         ok: false,
-            //         msg: 'No tiene privilegio de editar este elemento'
-            //     })
-            // }
-        }
-        catch (error) {
+        const prestamo = await Prestamo.findByPk(prestamoId);
+        if (!prestamo) {
             return res.status(404).json({
                 ok: false,
-                msg: 'No existe prestamo con ese id'
+                msg: 'No existe préstamo con ese id'
             })
         }
 
-        await Prestamo.findByIdAndDelete(prestamoId);
+        await Prestamo.destroy({ where: { id: prestamoId } });
         res.json({
             ok: true,
-            msg: "Elemento borrado"
+            msg: "Préstamo borrado"
         })
     }
     catch (error) {
         console.log(error)
         res.status(500).json({
             ok: false,
-            msg: 'Hable con el administrador'
+            msg: 'Ha ocurrido un error en el servidor'
         });
     }
 }
 
 module.exports = {
-    eliminarPrestamo,
     crearPrestamo,
-    actualizarPrestamo,
     getPrestamos,
+    getPrestamo,
+    actualizarPrestamo,
+    eliminarPrestamo,
 }

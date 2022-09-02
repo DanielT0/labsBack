@@ -1,14 +1,25 @@
-const { Schema, model } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const LaboratorioSchema = Schema({
-    nombre:{
-        type: String,
-        required: true,
+const sequelize = require('../database/config');
+
+const Laboratorio = sequelize.define('laboratorio', {
+    id:{
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true,
+    },
+    nombre: {
+        type: Sequelize.STRING,
+        allowNull: false,
     },
     descripcion:{
-        type: String,
-        required: true,
+        type: Sequelize.TEXT,
+        allowNull: false,
     },
-});
+    tipo: {
+        type: Sequelize.TEXT,
+    }
+})
 
-module.exports= model('Laboratorio', LaboratorioSchema);
+module.exports= Laboratorio;

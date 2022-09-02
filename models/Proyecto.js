@@ -1,21 +1,23 @@
-const { Schema, model } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const ProyectoSchema = Schema({
-    nombre:{
-        type: String,
-        required: true,
+const sequelize = require('../database/config');
+
+const Proyecto = sequelize.define('proyecto', {
+    id:{
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true,
     },
-    laboratorio: {
-        type: Schema.Types.ObjectId,
-        ref: 'Laboratorio',
-        required: true,
-    }
-});
-
-ProyectoSchema.method('toJSON', function(){
-    const {__v, _id, ...object} = this.toObject();
-    object.id = _id;
-    return object;
+    nombre: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+    },
+    descripcion:{
+        type: Sequelize.TEXT,
+        allowNull: false,
+    },
 })
 
-module.exports= model('Proyecto', ProyectoSchema);
+module.exports= Proyecto;

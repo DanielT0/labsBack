@@ -1,31 +1,25 @@
-const { Schema, model } = require('mongoose');
+const Sequelize = require('sequelize');
 
-const PrestamoSchema = Schema({
-    idElemento:{
-        type: Schema.Types.ObjectId,
-        ref: 'ElementoLab',
-        required: true,
-    },
-    idUsuario:{
-        type: Schema.Types.ObjectId,
-        ref: 'Usuario',
-        required: true,
-    },
-    cantidad:{
-        type: Number,
-        required: true,
-    },
-    fechaPrestamo :{
-        type: Date,
-        required: true,
-    },
-    fechaDevolucion :{
-        type: Date,
-        required: true,
-    },
-    observaciones:{
-        type: String, 
-    },
-});
+const sequelize = require('../database/config');
 
-module.exports= model('Prestamo', PrestamoSchema);
+const Prestamo = sequelize.define('prestamo', {
+    id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        primaryKey: true,
+        autoIncrement: true,
+    },
+    fechaPrestamo: {
+        type: Sequelize.DATE,
+        allowNull: false,
+    },
+    fechaDevolucion: {
+        type: Sequelize.DATE,
+        allowNull: false,
+    },
+    observaciones: {
+        type: Sequelize.TEXT,
+    },
+})
+
+module.exports = Prestamo;
